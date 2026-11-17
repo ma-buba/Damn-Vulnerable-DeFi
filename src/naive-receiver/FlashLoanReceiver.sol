@@ -19,7 +19,7 @@ contract FlashLoanReceiver is IERC3156FlashBorrower {
         assembly {
             // gas savings
             if iszero(eq(sload(pool.slot), caller())) {
-                mstore(0x00, 0x48f5c3ed)
+                mstore(0x00, 0x48f5c3ed) // InvalidCaller()
                 revert(0x1c, 0x04)
             }
         }
@@ -30,7 +30,7 @@ contract FlashLoanReceiver is IERC3156FlashBorrower {
         unchecked {
             amountToBeRepaid = amount + fee;
         }
-
+ 
         _executeActionDuringFlashLoan();
 
         // Return funds to pool
@@ -39,6 +39,6 @@ contract FlashLoanReceiver is IERC3156FlashBorrower {
         return keccak256("ERC3156FlashBorrower.onFlashLoan");
     }
 
-    // Internal function where the funds received would be used
+        // Internal function where the funds received would be used
     function _executeActionDuringFlashLoan() internal {}
 }

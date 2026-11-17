@@ -8,7 +8,7 @@ import {UnstoppableVault, ERC20} from "../unstoppable/UnstoppableVault.sol";
 
 /**
  * @notice Permissioned contract for on-chain monitoring of the vault's flashloan feature.  
- */
+ */ 
 contract UnstoppableMonitor is Owned, IERC3156FlashBorrower {
     UnstoppableVault private immutable vault;
 

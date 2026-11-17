@@ -22,7 +22,7 @@ contract UnstoppableChallenge is Test {
         vm.startPrank(player, player);
         _;
         vm.stopPrank();
-        _isSolved();
+        _isSolved(); 
     }
 
     /**
@@ -91,7 +91,7 @@ contract UnstoppableChallenge is Test {
      * CODE YOUR SOLUTION HERE
      */
     function test_unstoppable() public checkSolvedByPlayer {
-        
+        token.transfer(address(vault), 5e18);
     }
 
     /**

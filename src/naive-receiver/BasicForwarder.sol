@@ -12,13 +12,13 @@ interface IHasTrustedForwarder {
 
 contract BasicForwarder is EIP712 {
     struct Request {
-        address from;
-        address target;
-        uint256 value;
+        address from; //
+        address target; // target.trustedforwarder
+        uint256 value; //
         uint256 gas;
-        uint256 nonce;
+        uint256 nonce; //
         bytes data;
-        uint256 deadline;
+        uint256 deadline; //
     }
 
     error InvalidSigner();

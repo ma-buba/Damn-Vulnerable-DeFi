@@ -11,6 +11,41 @@ Use Damn Vulnerable DeFi to:
 - Benchmark smart contract security tooling.
 - Create educational content on smart contract security with articles, tutorials, talks, courses, workshops, trainings, CTFs, etc. 
 
+---
+## 👤 Author
+
+**Muhammad Abdullah** (ma_buba)
+- GitHub: [@ma-buba](https://github.com/ma-buba)
+- Twitter/X: [@0xstrikerr](https://twitter.com/0xstrikerr)
+- LinkedIn: [Muhammad Abdullah](https://linkedin.com/in/muhammadd-abdullahii-3a5774306)
+> Built while learning smart contract security. Feedback and PRs welcome — if you spot a cleaner exploit, open an issue! 🐛
+---
+### ⭐ If this helped you understand a challenge, consider starring the repo!
+
+## Challenge Progress
+
+**Solved: 12 / 18**
+
+- [✅] 01 - Unstoppable
+- [✅] 02 - Naive Receiver
+- [✅] 03 - Truster
+- [✅] 04 - Side Entrance
+- [✅] 05 - The Rewarder
+- [✅] 06 - Selfie
+- [✅] 07 - Compromised
+- [✅] 08 - Puppet
+- [✅] 09 - Puppet V2
+- [✅] 10 - Free Rider
+- [✅] 11 - Backdoor
+- [✅] 12 - Climber
+- [ ] 13 - Wallet Mining
+- [ ] 14 - Puppet V3
+- [ ] 15 - ABI Smuggling
+- [ ] 16 - Shards
+- [ ] 17 - Curvy Puppet
+- [ ] 18 - Withdrawal
+
+
 ## Install
 
 1. Clone the repository.
@@ -51,6 +86,8 @@ Challenges may have more than one possible solution.
 ## Troubleshooting
 
 You can ask the community for help in [the discussions section](https://github.com/theredguild/damn-vulnerable-defi/discussions).
+
+> This is my personal set of solutions to **Damn Vulnerable DeFi**, created by [The Red Guild](https://github.com/theredguild/damn-vulnerable-defi). All credit for the challenges goes to the original authors and contributors.
 
 ## Disclaimer
 

