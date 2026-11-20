@@ -38,7 +38,7 @@ Use Damn Vulnerable DeFi to:
 - [✅] 10 - Free Rider
 - [✅] 11 - Backdoor
 - [✅] 12 - Climber
-- [ ] 13 - Wallet Mining
+- [✅] 13 - Wallet Mining
 - [ ] 14 - Puppet V3
 - [ ] 15 - ABI Smuggling
 - [ ] 16 - Shards
