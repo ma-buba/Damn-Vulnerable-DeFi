@@ -21,9 +21,39 @@ Layer 3: Research.
 # LAYER 2
 # define main external functions with the critical flow(go line by line), connect which contract calls which.
 - WalletDeployer 
-	rule(mom)
-		revert if caller is not cheif, or if mom is address 0, or if mom is not address 0.
+	rule(_mom)
+		revert if caller is not cheif, or if _mom is address 0, or if mom is not address 0.
 		set mom
+	drop(aim, wat, num)
+		return false, if mom is not address 0 & can(caller, aim) is false.
+			can(msg.sender, aim):
+				make a function call "can(address, address)" to the mom stored in the variable.
+		return false, if a "createProxyWithNonce" call to the safeproxy doesn't return == `aim`.
+		if token balance of the address > 1 ether: transfer to the caller 1 ether.
+		return true
+
+- TransparentProxy
+- admin control upgrader, upgrader can set a new implementation to the proxy
+	setUpgrader(who)
+		only admin can set upgrader
+
+- AuthorizerFactory
+	deployWithProxy(wards[], aims[], upgrader[])
+		authorizer: deploys a proxy and it's implementation
+		assert(needsInit in the authorizer == 0)
+		setUpgrader in the authorizer
+
+- AuthorizerUpgradeable
+	Init(wards[], aims[])
+		needsInit but not be 0, if it's 0 revert
+		loop:
+			set wards and aims in the `wards` mapping to 1
+		needsInit = 0
+	can(usr, aim)
+		returns true if wards and aim in the `wards` mapping is set to 1
+
+
+
 # complete diagram
 
 # AFTER LAYER 2: develop attacker mindset

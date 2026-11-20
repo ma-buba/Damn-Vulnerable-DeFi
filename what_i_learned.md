@@ -197,4 +197,10 @@ ma_buba@DESKTOP-4JPC4VR:~/damn-vulnerable-defi$ echo "4d 48 67 32 4f 47 4a 6b 4d
 ``` 
 
 
-8. 
+13. wallet-mining:
+- deploying contract using create2: The real thing. `create2(value, offset, size, salt)` is the actual CREATE2 opcode, and it runs inside `SafeProxyFactory.deployProxy`. So the address formula applies directly with the deployment.
+- if i want to specifically calculate the formula for a deployed or ready to be deployed contract, i use this.
+`address = keccak256(0xff ++ deployer ++ salt ++ keccak256(init_code))[12:]`
+this returns 32 bytes, while the last 20 bytes is the predicted address of the contract.
+
+`keccak256(abi.encodePacked(bytes1(0xff), deployer, salt, keccak256(initCode)));`

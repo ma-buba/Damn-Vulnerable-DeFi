@@ -62,6 +62,8 @@ contract WalletDeployer {
 
     function can(address u, address a) public view returns (bool y) {
         assembly {
+            // (bool y, ) = mom.staticcall(abi.encodeWithSelector(0x4538c4eb, u, a));
+            // 0x4538c4eb = can(address,address)
             let m := sload(0)
             if iszero(extcodesize(m)) { stop() }
             let p := mload(0x40)
